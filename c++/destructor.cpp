@@ -1,41 +1,32 @@
-#include<iostream>
-#include<string.h>
+#include <iostream>
+#include <string> // Switched to modern C++ strings
 using namespace std;
+
 class Employee
 {
-    public:
+public:
     int id;
-    char *name;
-    Employee()
-    {
-        cout<<"default Constructor\n";
-        id=0;
-        name=(char*)malloc(10);
-        strcpy(name, "No name");
-    }
-    
-    Employee(int x, char *str)
-    {
-        cout<<"constructor with 1 arg\n";
-        id=x;
-        name=(char *)malloc(10);
-        strcpy(name, str);
-    }
-    ~Employee()
-    {
-        cout<<"desstructor is called\n";
-        free(name);
-    }
+    string name; // No manual allocation or freeing needed
+
+    // Constructor 1: Initialize name to empty string
+    Employee(int i) : id(i), name("") {}
+
+    // Constructor 2: Initialize name with given string
+    Employee(int i, string s) : id(i), name(s) {}
+
+    // Destructor: No longer needs to manually free anything
+    ~Employee() {}
 };
 
 int main()
 {
-    Employee emp1(123, (char*)"aditya");
-    Employee emp2, emp3;
-    cout<<emp1.id<<endl;
-    cout<<emp1.name<<endl<<endl;
-    cout<<emp2.id<<endl;
-    cout<<emp2.name<<endl<<endl;
-    cout<<emp3.id<<endl;
-    cout<<emp3.name<<endl<<endl;
+    Employee e1(10);
+    Employee e2(11, "Tingu"); // No ugly typecasting needed
+
+    cout << "ID: " << e1.id << endl;
+    cout << "Name: " << e1.name << endl; // Safely prints empty string
+    cout << "ID: " << e2.id << endl;
+    cout << "Name: " << e2.name << endl;
+
+    return 0;
 }
