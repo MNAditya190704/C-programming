@@ -93,8 +93,6 @@ int main()
             printf("After Swapping :\n");
             printf("string1 : %s\n", str1);
             printf("string2 : %s\n", str2);
-            free(str1);
-            free(str2);
             break;
         }
         default:

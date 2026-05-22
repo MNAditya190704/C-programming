@@ -26,314 +26,335 @@ copy_remaining_img_data()
 #include "common.h"     // Contains MAGIC_STRING
 */
 #include <stdio.h>
+#include<string.h>
 #include "encode.h"
 #include "types.h"
 #include "common.h"
-
-/* Get image size
- * Input: Image file ptr
- * Output: width * height * bytes per pixel (3 in our case)
- * Description: In BMP Image, width is stored in offset 18,
- * and height after that. size is 4 bytes
- */
-
- /* Check operation */
-Opr_type check_operation(char *option)
+/* This function checks the command-line option entered by the user.
+If the input is -e, it returns encode; if it is -d, it returns decode.
+If neither matches, it returns unsupported.*/
+Opr_type check_operation(char *adi)
 {
-     // strcmp compares two strings
-    // returns 0 if both strings are equal
-
-    if(strcmp(option, "-e") == 0)
+    if(strcmp(adi, "-e") == 0)
     {
-        // user entered -e
-        // means encoding operation
         return encode;
     }
-    else if(strcmp(option, "-d") == 0)
+    else if(strcmp(adi, "-d") == 0)
     {
-        // user entered -d
-        // means decoding operation
-
         return decode;
     }
-
     return unsupported;
 }
-
-/* Read and validate encode args . Purpose:
-
-Verify command line arguments
-Store filenames into structure*/
-Status validate_encode_args(char *argv[], EncodeInfo *encInfo)// parameters char *argv[]
+/* This function checks whether the user has entered a valid BMP image file for encoding.
+   It checks whether the source image name contains ".bmp".
+   If yes, the file name is stored inside the EncodeInfo structure.
+   If not, the function returns failure.
+   If validation succeeds, success is returned.
+   Encoding should only be done on BMP images because the program directly modifies pixel bytes using LSB steganography.*/
+Status validate_encode_args(char *adi[], EncodeInfo *mn)
 {
     /* Source image file */
-    if(strstr(argv[2], ".bmp") != NULL)// searches for substring. returns pointer to bmp. if null occurs(no file name) that is 1 argument and generated filename is another argument therefore 2
+    if(strstr(adi[2], ".bmp") != NULL)
     {
-        encInfo->src_image_fname = argv[2];// pointer to structure.contains all encoding. store image filename using pointer 
+        mn->src_image_fname = adi[2];
     }
     else
     {
         return failure;
     }
-}
-
-/* Perform encoding */
-Status do_encoding(char *argv[], EncodeInfo *encInfo)
-{
-    if(open_files(encInfo) == failure)// open all files
-    {
-        printf("ERROR: Unable to open files\n");
-        return failure;
-    }
-
-    printf("INFO: Files opened successfully\n");
-
-    if(check_capacity(encInfo) == failure)// check whether image has enough bytes to store secret data
-    {
-        printf("ERROR: Insufficient image capacity\n");
-        return failure;
-    }
-
-    printf("INFO: Capacity check passed\n");
-
-    if(copy_bmp_header(encInfo) == failure)// bmp first 54 bytes are header. must copy exactly. else image becomes corrupted
-    {
-        printf("ERROR: Failed to copy header\n");
-        return failure;
-    }
-
-    printf("INFO: BMP header copied\n");
-
-    if(encode_magic_string(MAGIC_STRING, encInfo) == failure)// stores speacial identifier
-    {
-        printf("ERROR: Failed to encode magic string\n");
-        return failure;
-    }
-
-    printf("INFO: Magic string encoded\n");
-
-    if(encode_secret_file_extn(encInfo) == failure)//Stores extension
-    {
-        printf("ERROR: Failed to encode extension\n");
-        return failure;
-    }
-
-    printf("INFO: Secret extension encoded\n");
-
-    if(encode_secret_file_data(encInfo) == failure)//Stores actual secret file contents.
-    {
-        printf("ERROR: Failed to encode file data\n");
-        return failure;
-    }
-
-    printf("INFO: Secret data encoded\n");
-
-    if(copy_remaining_img_data(encInfo) == failure)//Copies leftover image bytes unchanged.
-    {
-        printf("ERROR: Failed to copy remaining data\n");
-        return failure;
-    }
-
-    printf("INFO: Remaining image data copied\n");
-
     return success;
 }
-
-Status open_files(EncodeInfo *encInfo)
+/* This is the main encoding controller function. It performs all encoding steps one after another.
+   Opens all required files.
+   Checks whether image has enough capacity.
+   Copies BMP header to output image.
+   Encodes the magic string.
+   Encodes secret file extension.
+   Encodes secret file data.
+   Copies remaining image data.
+   Closes all opened files.
+   This function manages the complete encoding process in the correct sequence so the hidden data can later be decoded properly.*/
+Status do_encoding(char *adi[], EncodeInfo *mn)
 {
-    encInfo->src_image_fptr = fopen(encInfo->src_image_fname, "r");
-
-    if (encInfo->src_image_fptr == NULL)
+    if(open_files(mn) == failure)
     {
-    	perror("fopen");
-    	fprintf(stderr, "ERROR: Unable to open file %s\n", encInfo->src_image_fname);
-
-    	return failure;
+        printf("Unable to open files\n");
+        return failure;
     }
-
-    encInfo->secret_fptr = fopen(encInfo->secret_fname, "r");
-
-    if (encInfo->secret_fptr == NULL)
+    printf("Files opened successfully\n");
+    if(check_capacity(mn) == failure)
     {
-    	perror("fopen");
-    	fprintf(stderr, "ERROR: Unable to open file %s\n", encInfo->secret_fname);
-
-    	return failure;
+        printf("Insufficient image capacity\n");
+        return failure;
     }
-
-    encInfo->output_image_fptr = fopen(encInfo->output_image_fname, "w");
-
-    if (encInfo->output_image_fptr == NULL)
+    printf("Capacity check passed\n");
+    if(copy_bmp_header(mn) == failure)
     {
-    	perror("fopen");
-    	fprintf(stderr, "ERROR: Unable to open file %s\n", encInfo->output_image_fname);
-
-    	return failure;
+        printf("Failed to copy header\n");
+        return failure;
     }
-
+    printf("BMP header copied\n");
+    if(encode_magic_string(MAGIC_STRING, mn) == failure)
+    {
+        printf("Failed to encode magic string\n");
+        return failure;
+    }
+    printf("Magic string encoded\n");
+    if(encode_secret_file_extn(mn) == failure)
+    {
+        printf("Failed to encode extension\n");
+        return failure;
+    }
+    printf("Secret extension encoded\n");
+    if(encode_secret_file_data(mn) == failure)
+    {
+        printf("Failed to encode file data\n");
+        return failure;
+    }
+    printf("Secret data encoded\n");
+    if(copy_remaining_img_data(mn) == failure)
+    {
+        printf("Failed to copy remaining data\n");
+        return failure;
+    }
+    printf("Remaining image data copied\n");
+     /* CLOSE FILES */
+    fclose(mn->src_image_fptr);
+    fclose(mn->secret_fptr);
+    fclose(mn->output_image_fptr);
     return success;
 }
+/* This function opens all files required for encoding.
+   Opens source BMP image in binary read mode.
+   Opens secret file in binary read mode.
+   Opens output stego image in binary write mode.
+   Checks whether each file opened successfully.
+   Returns failure if any file cannot be opened.
+   BMP images contain raw binary data. Using text mode may corrupt image bytes during reading or writing.*/
+Status open_files(EncodeInfo *mn)
+{
+    mn->src_image_fptr = fopen(mn->src_image_fname, "rb");
+    if (mn->src_image_fptr == NULL)
+    {
+        perror("fopen");
+        fprintf(stderr, "ERROR: Unable to open file %s\n", mn->src_image_fname);
+        return failure;
+    }
+    mn->secret_fptr = fopen(mn->secret_fname, "rb");
+    if (mn->secret_fptr == NULL)
+    {
+        perror("fopen");
 
-/* Check capacity */
-Status check_capacity(EncodeInfo *encInfo)
+        fprintf(stderr, "ERROR: Unable to open file %s\n", mn->secret_fname);
+
+        return failure;
+    }
+    mn->output_image_fptr = fopen(mn->output_image_fname, "wb");
+    if (mn->output_image_fptr == NULL)
+    {
+        perror("fopen");
+        fprintf(stderr, "ERROR: Unable to open file %s\n", mn->output_image_fname);
+        return failure;
+    }
+    return success;
+}
+/* This function checks whether the source image has enough space to store the secret data.
+   Finds total image capacity.
+   Finds secret file size.
+   Finds extension size.
+   Calculates total required bytes for encoding.
+   Compares required capacity with available image capacity.
+   If the image does not have enough space, encoding may corrupt the image or lose secret data. */
+Status check_capacity(EncodeInfo *mn)
 {
     unsigned int image_capacity;
-
-    image_capacity = get_image_size_for_bmp(encInfo->src_image_fptr);// gets total available image bytes
-
-    encInfo->secret_file_size = get_file_size(encInfo->secret_fptr);// gets secret file size
-
-    //each character needs 8 image bytes because 1 bit stored per image byte
-    int required_size =
-        (strlen(MAGIC_STRING) * 8) +
-        (4 * 8) +// for storing integer sizes
-        (4 * 8) +
-        (encInfo->secret_file_size * 8) +
-        54;
-
-    if(image_capacity > required_size)
+    image_capacity = get_image_size_for_bmp(mn->src_image_fptr);
+    mn->secret_file_size = get_file_size(mn->secret_fptr);
+    char *extn = strrchr(mn->secret_fname, '.');
+    if(extn == NULL)
+    {
+        return failure;
+    }
+    int extn_size = strlen(extn);
+    int required_capacity = (strlen(MAGIC_STRING) * 8) + (4 * 8) + (extn_size * 8) + (4 * 8) + (mn->secret_file_size * 8) + 54;
+    if(image_capacity > required_capacity)
     {
         return success;
     }
-
     return failure;
 }
-
-/*get the size of image for bit mapping*/
-unsigned int get_image_size_for_bmp(FILE *fptr_image)
+/* This function calculates the size of BMP image pixel data.
+   Moves file pointer to width and height location in BMP header.
+   Reads width and height values.
+   Calculates image size using: width × height × 3 because each pixel uses 3 bytes (RGB).
+   The program needs image capacity information before encoding data.*/
+unsigned int get_image_size_for_bmp(FILE *tya)
 {
-    unsigned int width, height;
-    // Move file pointer to byte 18.
-    //BMP format stores width here.
-    fseek(fptr_image, 18, SEEK_SET);
-
-    // Read the width (an int)
-    fread(&width, sizeof(int), 1, fptr_image);//read width
-    printf("width = %u\n", width);
-
-    // Read the height (an int)
-    fread(&height, sizeof(int), 1, fptr_image);// read height
-    printf("height = %u\n", height);
-
-    // Return image capacity
-    return width * height * 3; //bmp uses rgb. therefore 3 bytes per pixel
+    unsigned int mn, adi;
+    fseek(tya, 18, SEEK_SET);
+    fread(&mn, sizeof(int), 1, tya);
+    printf("width = %u\n", mn);
+    fread(&adi, sizeof(int), 1, tya);
+    printf("height = %u\n", adi);
+    return mn * adi * 3;
 }
-
-/* Get file size */
-unsigned int get_file_size(FILE *fptr)
+/* This function finds the total size of a file.
+   Moves file pointer to end of file.
+   Uses ftell() to get current position.
+   Rewinds file pointer back to beginning.
+   Returns file size.
+   The encoder must know the secret file size before encoding it. */
+unsigned int get_file_size(FILE *nm)
 {
-    fseek(fptr, 0, SEEK_END);
-
-    int size = ftell(fptr);
-
-    rewind(fptr);
-
-    return size;
+    fseek(nm, 0, SEEK_END);
+    int ida = ftell(nm);
+    rewind(nm);
+    return ida;
 }
-
-/* Copy bmp header */
-Status copy_bmp_header(EncodeInfo *encInfo)
+/* This function copies the first 54 bytes of BMP header directly to the output image.
+   Reads first 54 bytes from source image.
+   Writes those bytes into output image unchanged.
+   BMP header contains important image information such as size, resolution and color format. Modifying it may corrupt the image.*/
+Status copy_bmp_header(EncodeInfo *mn)
 {
-    rewind(encInfo->src_image_fptr);
-
-    char buffer[54];// temporay array for bmp header
-
-    fread(buffer, 54, 1, encInfo->src_image_fptr);// read header from source image
-
-    fwrite(buffer, 54, 1, encInfo->output_image_fptr);// write header to output image
-
+    rewind(mn->src_image_fptr);
+    char adi[54];
+    fread(adi, 54, 1, mn->src_image_fptr);
+    fwrite(adi, 54, 1, mn->output_image_fptr);
     return success;
 }
-
-/* Encode magic string */
-Status encode_magic_string(const char *magic_string, EncodeInfo *encInfo)
+/* This function hides a special identification string inside the image.
+   Reads 8 bytes from image for each character.
+   Encodes 1 character into LSBs of those 8 bytes.
+   Writes modified bytes into output image.
+   The magic string helps decoder identify whether the image actually contains hidden data.*/
+Status encode_magic_string(const char *tya, EncodeInfo *mn)
 {
-    char image_buffer[8]; // one character= 8 bits. need 8 image bytes to store 1 character
-
-    for(int i = 0; magic_string[i] != '\0'; i++)
+    char adi[8];
+    for(int ida = 0; tya[ida] != '\0'; ida++)
     {
-        fread(image_buffer, 8, 1, encInfo->src_image_fptr);// read 8 bytes from image
-
-        encode_1byte_to_lsb(magic_string[i], image_buffer);// hide 1 character into those 8 bytes
-
-        fwrite(image_buffer, 8, 1, encInfo->output_image_fptr);// write modified bytes
+        fread(adi, 8, 1, mn->src_image_fptr);
+        encode_1byte_to_lsb(tya[ida], adi);
+        fwrite(adi, 8, 1, mn->output_image_fptr);
     }
-
     return success;
 }
-
-/* Encode secret file extension */
-Status encode_secret_file_extn(EncodeInfo *encInfo)
+/* This function encodes the secret file extension (.txt).
+   Extracts extension from secret file name.
+   Finds extension length.
+   Encodes extension size into image.
+   Encodes extension characters one by one.
+   During decoding, the extension helps recreate the original file type correctly.*/
+Status encode_secret_file_extn(EncodeInfo *mn)
 {
-    char *extn = strstr(encInfo->secret_fname, ".");// gets pointer to extension
-
-    int extn_size = strlen(extn);// gets extension length
-
+    /* Extract extension */
+    char *ext = strrchr(mn->secret_fname, '.');
+    /* Check whether extension exists */
+    if(ext == NULL)
+    {
+        return failure;
+    }
+    /* Validate extension */
+    if(strcmp(ext, ".txt") != 0)
+    {
+        return failure;
+    }
+    /* Find extension size */
+    int ext_size = strlen(ext);
     char buffer[32];
-
-    fread(buffer, 32, 1, encInfo->src_image_fptr);
-
-    encode_4byte_to_lsb(extn_size, buffer);// stored extension size first, decoder needs this later. stored 1 by 1.
-
-    fwrite(buffer, 32, 1, encInfo->output_image_fptr);
-
-    char image_buffer[8];
-
-    for(int i = 0; i < extn_size; i++)
+    /* Read 32 bytes from source image */
+    if(fread(buffer, 32, 1, mn->src_image_fptr) != 1)
     {
-        fread(image_buffer, 8, 1, encInfo->src_image_fptr);
+        return failure;
+    }
+    /* Encode extension size */
+    encode_4byte_to_lsb(ext_size, buffer);
+    /* Write encoded data */
+    if(fwrite(buffer, 32, 1, mn->output_image_fptr) != 1)
+    {
+        return failure;
+    }
+    char data[8];
+    /* Encode extension characters */
+    for(int i = 0; i < ext_size; i++)
+    {
+        if(fread(data, 8, 1, mn->src_image_fptr) != 1)
+        {
+            return failure;
+        }
+        encode_1byte_to_lsb(ext[i], data);
+        if(fwrite(data, 8, 1, mn->output_image_fptr) != 1)
+        {
+            return failure;
+        }
+    }
+    return success;
+}
+/* This function encodes the actual contents of the secret file.
+   Encodes secret file size first.
+   Reads secret file character by character.
+   Encodes each character into 8 image bytes using LSB method.
+   Writes modified bytes into output image.
+   This is the main step where the hidden message is stored
+   inside the BMP image.*/
+Status encode_secret_file_data(EncodeInfo *mn)
+{
+    char adi[32];
+    fread(adi, 32, 1, mn->src_image_fptr);
+    encode_4byte_to_lsb(mn->secret_file_size, adi);
+    fwrite(adi, 32, 1, mn->output_image_fptr);
+    char ida;
+    while(fread(&ida, 1, 1, mn->secret_fptr) > 0)
+    {
+        char ayt[8];
 
-        encode_1byte_to_lsb(extn[i], image_buffer);
+        fread(ayt, 8, 1, mn->src_image_fptr);
 
-        fwrite(image_buffer, 8, 1, encInfo->output_image_fptr);
+        encode_1byte_to_lsb(ida, ayt);
+
+        fwrite(ayt, 8, 1, mn->output_image_fptr);
+    }
+    return success;
+}
+/* This function hides 1 byte of secret data inside 8 bytes of image data.
+   Takes one bit from secret character.
+   Replaces LSB of one image byte with that bit.
+   Repeats for all 8 bits.
+   Changing only the last bit causes very small color changes, making the modification invisible to human eyes.*/
+Status encode_1byte_to_lsb(char adi, char *mn)
+{
+    for(int ida = 0; ida < 8; ida++)
+    {
+        mn[ida] = (mn[ida] & 0xFE) | ((adi >> (7 - ida)) & 1);
     }
 
     return success;
 }
-
-Status encode_secret_file_data(EncodeInfo *encInfo)
+/* This function hides a 4-byte integer inside 32 image bytes.
+   Takes integer bits one by one.
+   Stores each bit inside LSB of image bytes.
+   Uses 32 image bytes for 32 bits.
+   File sizes and extension sizes are integers, so they must be encoded separately from normal characters.*/
+Status encode_4byte_to_lsb(int adi, char *mn)
 {
-    char buffer[32];
-    fread(buffer, 32, 1, encInfo->src_image_fptr);// Read 32 bits or 4 bytes of size 1(character size 1) and store image fptr pointer
-    encode_4byte_to_lsb(encInfo->secret_file_size, buffer);// encode 4 bytes from lsb
-    fwrite(buffer, 32, 1, encInfo->output_image_fptr);// write the encoded information back to the image file
-    char ch;
-    while(fread(&ch, 1 , 1, encInfo->secret_fptr ) > 0)// condition is as long as read data is not equal to zero
+    for(int ida = 0; ida < 32; ida++)
     {
-        char data_buffer[8];
-        fread(data_buffer, 8, 1, encInfo->src_image_fptr);// read data
-        encode_1byte_to_lsb(ch,data_buffer);// encode 1 byte of lsb data
-        fwrite(data_buffer, 8, 1, encInfo->output_image_fptr);// write the data back into the file
-    }
-        return success;
-}
-
-Status encode_1byte_to_lsb(char data, char *buffer_8)
-{
-    for(int i=0; i<32; i++)
-    {
-        buffer_8[i]=(buffer_8[i]&0xFE)|(data>>(7-i)*1);
+        mn[ida] = (mn[ida] & 0xFE) | ((adi >> (31 - ida)) & 1);
     }
     return success;
 }
-
-Status encode_4byte_to_lsb(int data, char *buffer_32)
+/* This function copies all remaining image data after encoding is completed.
+   Reads remaining bytes from source image.
+   Writes them directly into output image unchanged.
+   Only a small portion of image data is modified for hiding data.
+   The remaining image content must stay unchanged.*/
+Status copy_remaining_img_data(EncodeInfo *mn)
 {
-    for(int i=0; i<32; i++)
+    char adi;
+    while(fread(&adi, 1, 1, mn->src_image_fptr) > 0)
     {
-        buffer_32[i]=(buffer_32[i]&0xFE)|(data>>(7-i)*1);
+        fwrite(&adi, 1, 1, mn->output_image_fptr);
     }
-    return success;
-}
-Status copy_remaining_img_data(EncodeInfo *encInfo)
-{
-    char ch;
-
-    while(fread(&ch, 1, 1, encInfo->src_image_fptr)>0)
-    {
-        fwrite(&ch, 1, 1, encInfo->output_image_fptr);
-    }
-
     return success;
 }
 /* 

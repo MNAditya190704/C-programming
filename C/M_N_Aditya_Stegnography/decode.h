@@ -25,7 +25,7 @@ typedef struct DecodeInfo
 } DecodeInfo;
 
 /*validate decode arguments */
-Status validate_decode_args(char *argv[], DecodeInfo *decInfo);
+Status validate_decode_args(int argc, char *argv[], DecodeInfo *adi);
 
 /*perform decoding */
 Status do_decoding(char *argc[], DecodeInfo *decinfo);
