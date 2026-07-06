@@ -1,0 +1,88 @@
+make
+./APC.out 1ab4 + 12b
+./APC.out 1234 - 12b
+./APC.out 1AB4 x 123
+
+./APC.out 1234 + 123
+./APC.out 1234 - 123
+./APC.out 1234 x 123
+./APC.out 1234 / 123
+
+./APC.out +1234 + +123
+./APC.out +1234 - +123
+./APC.out +1234 x +123
+./APC.out +1234 / +123
+
+./APC.out -1234 + +123
+./APC.out -1234 - +123
+./APC.out -1234 x +123
+./APC.out -1234 / +123
+
+./APC.out -1234 + -123
+./APC.out -1234 - -123
+./APC.out -1234 x -123
+./APC.out -1234 / -123
+
+./APC.out +1234 + -123
+./APC.out +1234 - -123
+./APC.out +1234 x -123
+./APC.out +1234 / -123
+
+./APC.out 123 + 1234
+./APC.out 123 - 1234
+./APC.out 123 x 1234
+./APC.out 123 / 1234
+
+./APC.out +123 + +1234
+./APC.out +123 - +1234
+./APC.out +123 x +1234
+./APC.out +123 / +1234
+
+./APC.out +123 + -1234
+./APC.out +123 - -1234
+./APC.out +123 x -1234
+./APC.out +123 / -1234
+
+./APC.out -123 + -1234
+./APC.out -123 - -1234
+./APC.out -123 x -1234
+./APC.out -123 / -1234
+
+./APC.out -123 + +1234
+./APC.out -123 - +1234
+./APC.out -123 x +1234
+./APC.out -123 / +1234
+
+./APC.out 99 + 1
+./APC.out +99 + +1
+./APC.out -99 + +1
+./APC.out +99 + -1
+./APC.out -99 + -1
+
+./APC.out 999 + 1
+./APC.out +999 + +1
+./APC.out -999 + +1
+./APC.out +999 + -1
+./APC.out -999 + -1
+
+./APC.out 100 - 1
+./APC.out +100 - +1
+./APC.out +100 - -1
+./APC.out -100 - -1
+./APC.out -100 - +1
+
+./APC.out 0 x 100
+./APC.out 0 x +100
+./APC.out 0 x -100
+./APC.out 100 x 0
+./APC.out +100 x 0
+./APC.out -100 x 0
+
+./APC.out 1000 / 10
+./APC.out -100000 / 10
+./APC.out -10000000 / 10
+./APC.out 1000000000 / -10
+./APC.out 100000000000 / -10
+
+./APC.out 1234 / 0
+./APC.out 0 / 123
